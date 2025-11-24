@@ -3,508 +3,435 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buch auf Reisen: Sevilla</title>
+    <title>Sevilla Reiseplaner</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Andalusian Warmth (Warm Neutrals: bg-orange-50, bg-white; Text: stone-800; Accent: orange-600) -->
-    <!-- Application Structure Plan: The source report is a linear text document. This SPA redesigns it into a tab-based application with three main sections: "Übersicht/Plan", "Kulinarik-Guide", and "Tipps & Logistik". This structure was chosen because the user's main goals (seeing the plan, finding food) are distinct tasks. A tabbed interface provides immediate access to the relevant information, which is superior to scrolling a long document. The "Plan" tab uses sub-tabs (Fri/Sat/Sun) and a visual timeline for clarity. The "Kulinarik" tab uses a filterable card grid and modal, turning a static list into an interactive exploration tool. "Tipps" consolidates reference info. This is a task-oriented, not document-oriented, design. -->
-    <!-- Visualization & Content Choices: 1. Report (Itinerary) -> Goal: Show daily plan -> Viz: Vertical HTML/Tailwind Timeline -> Interaction: JS Tabs (Fri/Sat/Sun) -> Justification: More scannable and engaging than text. -> Method: HTML/JS. 2. Report (Activity Types Derived) -> Goal: Show trip focus -> Viz: Donut Chart -> Interaction: Hover Tooltip -> Justification: Provides a high-level summary of the trip's balance, fulfilling the mandatory Chart.js requirement. -> Library: Chart.js. 3. Report (Tapas Bars List) -> Goal: Explore food options -> Viz: Interactive Card Grid -> Interaction: JS Filters (Typ, Mahlzeit) and JS Modal (on click for details) -> Justification: Transforms a static list into a user-driven discovery tool, directly addressing a key user priority. -> Method: HTML/JS. 4. Report (Do's/Don'ts, Logistics) -> Goal: Reference -> Viz: Styled Lists/Text Blocks -> Interaction: None -> Justification: Clean, clear presentation of static info. -> Method: HTML. -->
+    <!-- Chosen Palette: Warm Neutrals (Stone) with Amber Accent -->
+    <!-- Application Structure Plan: Eine Tab-basierte Navigation (Freitag, Samstag, Sonntag, Tapas-Guide, Tipps) wurde gewählt. Diese Struktur ist aufgabenorientiert und ideal für einen Reisenden, der schnellen Zugriff auf den *aktuellen* Tag sowie auf Referenzinformationen (Tapas, Tipps) benötigt, ohne durch einen langen Plan scrollen zu müssen. Die Logik wählt automatisch den aktuellen Tag. -->
+    <!-- Visualization & Content Choices: Report Info: Tägliche Reiseroute -> Goal: Inform (Chronologie) -> Viz/Presentation: Vertikale Timeline (HTML/Tailwind) -> Interaction: Tab-Auswahl -> Justification: Klare, tageweise Gliederung. | Report Info: Essens- & Verhaltens-Tipps -> Goal: Inform (Referenz) -> Viz/Presentation: Thematische Karten (HTML/Tailwind) -> Interaction: Tab-Auswahl -> Justification: Schnelles Nachschlagen von Infos. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #FFF7ED; 
+        .tab-button {
+            transition: background-color 0.2s, color 0.2s;
         }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 1.25rem;
-            top: 1.25rem;
-            bottom: -1.25rem;
-            width: 2px;
-            background-color: #E7E5E4; 
-            transform: translateX(-50%);
+        .tab-button.active {
+            background-color: #f59e0b; 
+            color: white;
+            border-color: #f59e0b;
         }
-        .timeline-item:last-child::before {
-            display: none;
+        .tab-panel {
+            display: none; 
+            animation: fadeIn 0.5s ease-in-out;
         }
-        .timeline-icon {
-            position: absolute;
-            left: 1.25rem;
-            top: 1.25rem;
-            transform: translate(-50%, -50%);
-            z-index: 10;
+        .tab-panel.active {
+            display: block;
         }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 350px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="text-stone-800">
+<body class="bg-stone-100 font-sans text-stone-800">
 
-    <div class="max-w-6xl mx-auto p-4 sm:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-orange-900">Buch auf Reisen: Sevilla 🍊</h1>
-            <p class="text-lg text-stone-600 mt-2">Euer interaktiver Plan für ein perfektes Wochenende (12.12. – 14.12.)</p>
-        </header>
+    <header class="bg-amber-600 text-white p-6 shadow-lg">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold">Sevilla: Buch auf Reisen</h1>
+            <p class="text-amber-100 text-sm mt-1">12.12. – 14.12. | 🏨 <a href="https://www.eurostarshotels.com/eurostars-sevilla-boutique.html" target="_blank" class="underline hover:text-white">Eurostars Sevilla Boutique</a></p>
+        </div>
+    </header>
 
-        <nav class="flex justify-center border-b border-stone-300 mb-8 space-x-4 sm:space-x-8" id="main-nav">
-            <button data-tab="plan" class="nav-tab text-lg py-3 px-2 sm:px-4 font-medium border-b-4 border-orange-600 text-orange-700" aria-selected="true">
-                Übersicht & Plan
+    <nav class="sticky top-0 bg-white shadow-md z-10 border-b border-stone-200">
+        <div class="max-w-4xl mx-auto flex flex-wrap justify-center p-2 gap-2">
+            <button id="tab-freitag" class="tab-button text-sm font-semibold py-2 px-4 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-stone-50" onclick="showTab('panel-freitag', 'tab-freitag')">
+                Fr, 12.12. (Heute)
             </button>
-            <button data-tab="food" class="nav-tab text-lg py-3 px-2 sm:px-4 font-medium border-b-4 border-transparent text-stone-500 hover:border-orange-300 hover:text-stone-800" aria-selected="false">
-                Kulinarik-Guide
+            <button id="tab-samstag" class="tab-button text-sm font-semibold py-2 px-4 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-stone-50" onclick="showTab('panel-samstag', 'tab-samstag')">
+                Sa, 13.12.
             </button>
-            <button data-tab="tips" class="nav-tab text-lg py-3 px-2 sm:px-4 font-medium border-b-4 border-transparent text-stone-500 hover:border-orange-300 hover:text-stone-800" aria-selected="false">
-                Tipps & Logistik
+            <button id="tab-sonntag" class="tab-button text-sm font-semibold py-2 px-4 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-stone-50" onclick="showTab('panel-sonntag', 'tab-sonntag')">
+                So, 14.12.
             </button>
-        </nav>
+            <button id="tab-tapas" class="tab-button text-sm font-semibold py-2 px-4 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-stone-50" onclick="showTab('panel-tapas', 'tab-tapas')">
+                🍷 Tapas-Guide
+            </button>
+            <button id="tab-tipps" class="tab-button text-sm font-semibold py-2 px-4 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-stone-50" onclick="showTab('panel-tipps', 'tab-tipps')">
+                💡 Tipps
+            </button>
+        </div>
+    </nav>
 
-        <main id="main-content">
-            <section id="plan" class="tab-content">
-                <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
-                    <p class="text-stone-700 mb-6">Hier ist euer detaillierter Zeitplan. Nutzt die Tabs, um zwischen den Tagen zu wechseln. Zur besseren Übersicht haben wir rechts eine Grafik eingefügt, die den Fokus eurer Reiseaktivitäten visualisiert – perfekt ausbalanciert zwischen Kultur und Kulinarik!</p>
-                    <div class="grid md:grid-cols-3 gap-8">
-                        <div class="md:col-span-2">
-                            <div class="flex border-b border-stone-200" id="day-nav">
-                                <button data-day="freitag" class="day-tab flex-1 sm:flex-none py-3 px-4 text-center font-medium text-orange-700 border-b-2 border-orange-600" aria-selected="true">Freitag, 12.12.</button>
-                                <button data-day="samstag" class="day-tab flex-1 sm:flex-none py-3 px-4 text-center font-medium text-stone-500 border-b-2 border-transparent hover:border-orange-300 hover:text-stone-800" aria-selected="false">Samstag, 13.12.</button>
-                                <button data-day="sonntag" class="day-tab flex-1 sm:flex-none py-3 px-4 text-center font-medium text-stone-500 border-b-2 border-transparent hover:border-orange-300 hover:text-stone-800" aria-selected="false">Sonntag, 14.12.</button>
-                            </div>
-                            
-                            <div class="mt-6 space-y-8">
-                                <div id="freitag" class="day-content">
-                                    <h3 class="text-2xl font-semibold mb-4 text-orange-800">Freitag: Ankunft & Das Herz von Sevilla</h3>
-                                    <div class="relative pl-10 space-y-8">
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">✈️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">11:20 - 12:30 Uhr: Ankunft & Transfer</h4>
-                                                <p class="text-stone-600">Landung (11:20 Uhr) und Transfer zum Hotel. Check-in oder Koffer abstellen. Tipp: Erster Blick von der Dachterrasse!</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🍽️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">13:30 Uhr: Authentisches Mittagessen</h4>
-                                                <p class="text-stone-600">Start bei **Bodega Santa Cruz (Las Columnas)**. Laut, authentisch, perfekt für ein *Pringá Montadito* und ein kühles *Cruzcampo*.</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">⛪️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">15:00 Uhr: Kathedrale & Giralda</h4>
-                                                <p class="text-stone-600">Besichtigung der größten gotischen Kathedrale der Welt und Aufstieg auf den Giralda-Turm (über Rampen). **Tickets vorab online buchen!**</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🛌</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">17:00 Uhr: Pause & Check-in</h4>
-                                                <p class="text-stone-600">Zeit für eine spanische Siesta, frisch machen und ankommen.</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🌙</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">18:30 Uhr: Abendspaziergang</h4>
-                                                <p class="text-stone-600">Lasst euch durch die Gassen des **Barrio Santa Cruz** treiben.</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🥘</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">20:30 Uhr: Tapas Tour (Abendessen)</h4>
-                                                <p class="text-stone-600">1. Stop: **Casa Morales** (*Espinacas con Garbanzos*). 2. Stop: **Bodeguita Romero** (*Carrillada*).</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="samstag" class="day-content hidden">
-                                    <h3 class="text-2xl font-semibold mb-4 text-orange-800">Samstag: Paläste, Parks & Moderne</h3>
-                                    <div class="relative pl-10 space-y-8">
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🏛️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">09:30 Uhr: Real Alcázar</h4>
-                                                <p class="text-stone-600">Besuch des Königspalasts (Game of Thrones Drehort). Bucht den ersten Einlass, um die Gärten im magischen Morgenlicht zu sehen. Plant 2-2,5 Std. ein. **Tickets vorab buchen!**</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🌳</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">12:30 Uhr: Spaziergang zur Plaza de España</h4>
-                                                <p class="text-stone-600">Durch die *Jardines de Murillo* und den *Parque de María Luisa* zur spektakulären **Plaza de España**. Zeit zum Verweilen.</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🍽️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">14:00 Uhr: Mittagessen</h4>
-                                                <p class="text-stone-600">Option A (vor Ort): **Estraperlo** (modern, lokal). Option B (Rückweg): **La Bartola** (tolle vegetarische Optionen).</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🛍️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">16:00 Uhr: Siesta & Shopping</h4>
-                                                <p class="text-stone-600">Pause oder Bummel durch die Einkaufsstraßen *Sierpes* und *Tetuan* (Weihnachtsbeleuchtung!).</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🌇</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">18:00 Uhr: Sonnenuntergang auf "den Pilzen"</h4>
-                                                <p class="text-stone-600">Spaziergang zu **Las Setas (Metropol Parasol)**. Fahrt hoch und genießt den Blick bei Dämmerung.</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🥘</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">20:30 Uhr: Abendessen (Alfalfa/Macarena)</h4>
-                                                <p class="text-stone-600">Historisch: **El Rinconcillo** (älteste Bar, für einen Drink & *Jamón*). Modern/Gehoben: **Eslava** (preisgekrönte Gourmet-Tapas, z.B. *Huevo sobre Bizcocho de Boletus*).</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="sonntag" class="day-content hidden">
-                                    <h3 class="text-2xl font-semibold mb-4 text-orange-800">Sonntag: Süßer Abschied</h3>
-                                    <div class="relative pl-10 space-y-8">
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">🥐</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">09:00 Uhr: Traditionelles Frühstück</h4>
-                                                <p class="text-stone-600">Check-out (Gepäck lagern). Frühstück in der **Bar El Comercio** mit *Churros con Chocolate*.</p>
-                                            </div>
-                                        </div>
-                                        <div class="relative timeline-item">
-                                            <div class="timeline-icon bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">✈️</div>
-                                            <div class="pt-1">
-                                                <h4 class="font-semibold">10:00 - 10:40 Uhr: Abfahrt</h4>
-                                                <p class="text-stone-600">Gepäck holen und Taxi zum Flughafen. Ankunft am Flughafen gegen 10:40 Uhr für den Abflug um 12:10 Uhr.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="md:col-span-1">
-                            <h3 class="text-2xl font-semibold mb-4 text-orange-800 text-center">Reise-Überblick</h3>
-                            <p class="text-stone-600 text-center mb-4">Aufteilung eurer geplanten Aktivitäten:</p>
-                            <div class="chart-container">
-                                <canvas id="activityChart"></canvas>
-                            </div>
-                        </div>
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 pb-20">
+
+        <!-- Panel Freitag -->
+        <div id="panel-freitag" class="tab-panel">
+            <h2 class="text-2xl font-bold mb-4 text-stone-900">📅 Freitag, 12. Dezember: Ankunft & Königlicher Palast</h2>
+            <p class="text-sm text-stone-600 mb-6">Willkommen in Sevilla! Heute kommt ihr an, bezieht das Hotel, esst eure ersten authentischen Tapas und besucht den atemberaubenden Alcázar-Palast.</p>
+            <div class="relative pl-6 space-y-6 border-l-2 border-amber-300">
+                
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">11:20 Uhr – Landung in Sevilla (SVQ)</span>
+                        <p class="mt-1 text-sm text-stone-600"><i>Transfer:</i> Am bequemsten per Taxi (Pauschale "Tarifa Única" ca. 25–30 €, Dauer 20-25 Min.).</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Hinweis:</i> Taxis kommen oft nicht direkt vor die Hoteltür. Die letzten 100-200 Meter müsst ihr eventuell laufen.</p>
                     </div>
                 </div>
-            </section>
-            
-            <section id="food" class="tab-content hidden">
-                <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
-                    <p class="text-stone-700 mb-6">Eure kulinarische Reise ist ein zentraler Bestandteil des Trips. Hier findet ihr die Spezialitäten, die ihr probieren müsst, sowie eine interaktive Liste der empfohlenen Bars. Nutzt die Filter, um die perfekte Bar für den Moment zu finden.</p>
-                    
-                    <h3 class="text-2xl font-semibold mb-4 text-orange-800">Was ihr probieren müsst</h3>
-                    <div class="flex overflow-x-auto space-x-4 pb-4 mb-6">
-                        <div class="flex-shrink-0 w-60 bg-orange-50 p-4 rounded-lg shadow">
-                            <h4 class="font-bold">Jamón Ibérico de Bellota</h4>
-                            <p class="text-sm text-stone-600">Der beste Eichel-Schinken der Welt. Ein Muss.</p>
-                        </div>
-                        <div class="flex-shrink-0 w-60 bg-orange-50 p-4 rounded-lg shadow">
-                            <h4 class="font-bold">Salmorejo</h4>
-                            <p class="text-sm text-stone-600">Dicke, kalte Tomatencreme, oft mit Ei und Schinken.</p>
-                        </div>
-                        <div class="flex-shrink-0 w-60 bg-orange-50 p-4 rounded-lg shadow">
-                            <h4 class="font-bold">Espinacas con Garbanzos</h4>
-                            <p class="text-sm text-stone-600">Spinat mit Kichererbsen – ein maurisches Erbe.</p>
-                        </div>
-                        <div class="flex-shrink-0 w-60 bg-orange-50 p-4 rounded-lg shadow">
-                            <h4 class="font-bold">Carrillada</h4>
-                            <p class="text-sm text-stone-600">Butterzart geschmorte Schweinebäckchen.</p>
-                        </div>
-                        <div class="flex-shrink-0 w-60 bg-orange-50 p-4 rounded-lg shadow">
-                            <h4 class="font-bold">Vino de Naranja</h4>
-                            <p class="text-sm text-stone-600">Süßlicher Orangenwein, typisch für Sevilla.</p>
-                        </div>
-                    </div>
 
-                    <h3 class="text-2xl font-semibold mb-4 text-orange-800">Empfohlene Tapas Bars</h3>
-                    <div class="flex flex-wrap gap-2 mb-6" id="food-filter">
-                        <button data-filter="all" class="filter-btn bg-orange-600 text-white px-4 py-1.5 rounded-full text-sm font-medium">Alle</button>
-                        <button data-filter="traditionell" class="filter-btn bg-stone-200 text-stone-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-stone-300">Traditionell</button>
-                        <button data-filter="modern" class="filter-btn bg-stone-200 text-stone-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-stone-300">Modern / Gehoben</button>
-                        <button data-filter="mittag" class="filter-btn bg-stone-200 text-stone-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-stone-300">Mittagessen</button>
-                        <button data-filter="abend" class="filter-btn bg-stone-200 text-stone-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-stone-300">Abendessen</button>
-                    </div>
-
-                    <div id="food-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">12:30 Uhr – Check-in & Erster Ausblick</span>
+                        <p class="mt-1 text-sm text-stone-600">Check-in im Eurostars (oder Koffer abstellen).</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Tipp:</i> Geht kurz auf die <strong>Dachterrasse</strong> des Hotels für den ersten Blick auf die Giralda!</p>
                     </div>
                 </div>
-            </section>
 
-            <section id="tips" class="tab-content hidden">
-                <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
-                    <p class="text-stone-700 mb-6">Damit euer Kurztrip reibungslos verläuft, findet ihr hier die wichtigsten Do's & Don'ts sowie eure Logistik-Informationen auf einen Blick.</p>
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 class="text-2xl font-semibold mb-4 text-orange-800">✅ Do's</h3>
-                            <ul class="space-y-3">
-                                <li class="flex items-start">
-                                    <span class="text-green-600 font-bold mr-3 pt-1">✓</span>
-                                    <span>**Tickets vorbuchen:** Für Alcázar und Kathedrale absolut notwendig, um Warteschlangen zu vermeiden.</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-green-600 font-bold mr-3 pt-1">✓</span>
-                                    <span>**Essenszeiten anpassen:** Mittagessen (14-16 Uhr) und Abendessen (ab 21 Uhr) finden später statt.</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-green-600 font-bold mr-3 pt-1">✓</span>
-                                    <span>**Im Stehen essen:** An der Theke ("barra") ist es oft günstiger und geselliger.</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-green-600 font-bold mr-3 pt-1">✓</span>
-                                    <span>**"La Cuenta, por favor":** Ihr müsst aktiv nach der Rechnung fragen; sie wird nicht automatisch gebracht.</span>
-                                </li>
-                            </ul>
-                            
-                            <h3 class="text-2xl font-semibold mt-8 mb-4 text-orange-800">❌ Don'ts</h3>
-                            <ul class="space-y-3">
-                                <li class="flex items-start">
-                                    <span class="text-red-600 font-bold mr-3 pt-1">✗</span>
-                                    <span>**Hektik:** Andalusier sind entspannt ("no pasa nada"). Lasst euch anstecken.</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-red-600 font-bold mr-3 pt-1">✗</span>
-                                    <span>**Paella zum Abendessen:** Paella ist ein schweres Mittagsgericht. Abends isst man Tapas.</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-red-600 font-bold mr-3 pt-1">✗</span>
-                                    <span>**Flamenco-Fallen:** Meidet "Gratis-Shows" auf der Straße. Bucht eine Show im *La Casa del Flamenco* (intim, ohne Essen).</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-red-600 font-bold mr-3 pt-1">✗</span>
-                                    <span>**Orangen von Bäumen essen:** Die Orangen in der Stadt sind ungenießbare Bitterorangen.</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3 class="text-2xl font-semibold mb-4 text-orange-800">🏨 Unterkunft & Logistik</h3>
-                            <div class="bg-orange-50 p-4 rounded-lg shadow-inner">
-                                <h4 class="font-bold text-lg">Hotel: Eurostars Sevilla Boutique</h4>
-                                <p class="text-stone-700">Calle Abades 41-43</p>
-                                <p class="text-sm text-stone-600 mt-1">*Hinweis: Liegt in der Fußgängerzone. Taxis können eventuell nicht direkt vorfahren (ca. 100-200m Fußweg).*</p>
-                            </div>
-                            
-                            <h4 class="font-bold text-lg mt-6 mb-2">✈️ Transfer Flughafen ↔ Hotel</h4>
-                            <div class="space-y-3">
-                                <div class="bg-stone-100 p-4 rounded-lg">
-                                    <h5 class="font-semibold">Taxi (Bequemste Option)</h5>
-                                    <p class="text-sm text-stone-600">Pauschalpreis (Tarifa Única) ca. 25-30 €. Dauer: ca. 20-25 Min.</p>
-                                </div>
-                                <div class="bg-stone-100 p-4 rounded-lg">
-                                    <h5 class="font-semibold">Bus (Linie EA)</h5>
-                                    <p class="text-sm text-stone-600">Bis Haltestelle "Paseo de Colón" (Torre del Oro), von dort ca. 10-15 Min. zu Fuß durch die Gassen. Mit Gepäck nicht empfohlen.</p>
-                                </div>
-                            </div>
-                        </div>
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">13:30 Uhr – Lunch: <a href="https://www.google.com/search?q=https://goo.gl/maps/LasColumnasSevilla" target="_blank" class="underline hover:text-amber-800">Bodega Santa Cruz (Las Columnas)</a></span>
+                        <p class="mt-1 text-sm text-stone-600"><i>Vibe:</i> Laut, chaotisch, Servietten auf dem Boden – absolut authentisch.</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Must-Eat:</i> "Pringá Montadito" (Braten-Sandwich) dazu ein kühles Cruzcampo.</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Logistik:</i> Von hier sind es nur wenige Schritte zum Alcázar-Eingang.</p>
                     </div>
                 </div>
-            </section>
-        </main>
-    </div>
 
-    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden items-center justify-center">
-        <div id="modal-content" class="bg-white rounded-lg shadow-xl w-11/12 max-w-lg p-6 z-50 m-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="modal-title" class="text-2xl font-bold text-orange-800">Bar Name</h3>
-                <button id="modal-close" class="text-stone-500 hover:text-stone-800 text-3xl">&times;</button>
-            </div>
-            <div id="modal-body" class="text-stone-700">
-                <p class="font-semibold">Spezialität:</p>
-                <p id="modal-specialty" class="mb-2"></p>
-                <p class="font-semibold">Vibe & Info:</p>
-                <p id="modal-vibe" class="mb-2"></p>
-                <p class="font-semibold">Adresse:</p>
-                <p id="modal-address"></p>
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-red-600 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-200">
+                        <span class="font-bold text-red-700 text-sm">15:00 Uhr – 🏛️ FIX: Real Alcázar</span>
+                        <p class="mt-1 text-sm text-red-900">Ihr taucht ein in die maurische Architektur und die Gärten (Drehort von <i>Game of Thrones</i>).</p>
+                        <p class="mt-1 text-sm text-red-900"><i>Wichtig:</i> Seid pünktlich am Eingang (Puerta del León).</p>
+                        <a href="https://www.alcazarsevilla.org/" target="_blank" class="mt-2 inline-block text-xs font-semibold text-red-700 underline hover:text-red-900">🎟️ Offizielle Tickets Real Alcázar</a>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">17:30 Uhr – Spaziergang: Barrio Santa Cruz</span>
+                        <p class="mt-1 text-sm text-stone-600">Nach dem Palast lasst ihr euch durch das angrenzende jüdische Viertel treiben. Die Gassen sind eng, voller Orangenbäume und Geschichte. Perfekt für eine kleine Pause mit einem Kaffee oder Vermut.</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">20:30 Uhr – Dinner: Tapas Tour (El Arenal)</span>
+                        <p class="mt-1 text-sm text-stone-600">Wir meiden die Touristenfallen direkt an der Kathedrale und gehen Richtung Arenal-Viertel.</p>
+                        <p class="mt-2 text-sm text-stone-600"><i>Station 1:</i> <a href="https://www.google.com/search?q=https://goo.gl/maps/CasaMorales" target="_blank" class="font-semibold underline hover:text-amber-800">Casa Morales</a> (Calle García de Vinuesa, 11). Seit 1850, riesige Weinfässer.</p>
+                        <p class="mt-1 text-sm text-stone-600 ml-4"><i>Bestellung:</i> Espinacas con Garbanzos (Spinat mit Kichererbsen) & Käse.</p>
+                        <p class="mt-2 text-sm text-stone-600"><i>Station 2:</i> <a href="http://bodeguitaromero.es/" target="_blank" class="font-semibold underline hover:text-amber-800">Bodeguita Romero</a> (Calle Harinas, 10).</p>
+                        <p class="mt-1 text-sm text-stone-600 ml-4"><i>Bestellung:</i> Das vielleicht beste Pringá-Sandwich der Stadt & Carrillada (Schweinebäckchen).</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- Panel Samstag -->
+        <div id="panel-samstag" class="tab-panel">
+            <h2 class="text-2xl font-bold mb-4 text-stone-900">📅 Samstag, 13. Dezember: Kathedrale, Triana & Moderne Aussichten</h2>
+            <p class="text-sm text-stone-600 mb-6">Der zweite Tag steht im Zeichen der gigantischen Kathedrale, dem authentischen Viertel Triana jenseits des Flusses und modernen Ausblicken bei Sonnenuntergang.</p>
+            <div class="relative pl-6 space-y-6 border-l-2 border-amber-300">
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">09:30 Uhr – Traditionelles Frühstück</span>
+                        <p class="mt-1 text-sm text-stone-600"><i>Ort:</i> <a href="https://barelcomercio.shop/" target="_blank" class="font-semibold underline hover:text-amber-800">Bar El Comercio</a> (Calle Lineros, 9).</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Must-Eat:</i> Die besten Churros con Chocolate der Stadt.</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">10:30 Uhr – Spaziergang durch das Zentrum</span>
+                        <p class="mt-1 text-sm text-stone-600">Schlendert entspannt vom Frühstück Richtung Kathedrale. Nutzt die Zeit, um die Plaza del Salvador oder das Rathaus (Ayuntamiento) von außen zu sehen.</p>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-red-600 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-200">
+                        <span class="font-bold text-red-700 text-sm">11:30 Uhr – ⛪ FIX: Kathedrale & Giralda</span>
+                        <p class="mt-1 text-sm text-red-900">Besichtigung der größten gotischen Kathedrale der Welt.</p>
+                        <p class="mt-1 text-sm text-red-900"><i>Aktivität:</i> Aufstieg auf den Giralda-Turm (Rampen statt Treppen!).</p>
+                        <a href="https://www.catedraldesevilla.es/" target="_blank" class="mt-2 inline-block text-xs font-semibold text-red-700 underline hover:text-red-900">🎟️ Offizielle Tickets Kathedrale</a>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">14:00 Uhr – Mittagessen & Triana</span>
+                        <p class="mt-1 text-sm text-stone-600">Überquert die Brücke "Puente de Isabel II" in das Töpferviertel Triana.</p>
+                        <p class="mt-2 text-sm text-stone-600"><i>Ort:</i> <a href="https://decouvrirseville.com/las-golondrinas/" target="_blank" class="font-semibold underline hover:text-amber-800">Las Golondrinas</a> (Calle Pagés del Corro).</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Alternative (Zentrum):</i> <a href="https://labartola.makro.bar/?lang=es" target="_blank" class="font-semibold underline hover:text-amber-800">La Bartola</a> (Calle San Jose) – exzellente Zucchini-Blüten.</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">16:30 Uhr – Plaza de España</span>
+                        <p class="mt-1 text-sm text-stone-600">Spaziergang (oder kurzes Taxi/Uber) zum <i>Parque de María Luisa</i> und zur Plaza de España. Im späten Nachmittagslicht sind die Kacheln am schönsten.</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">18:00 Uhr – Sonnenuntergang auf den "Pilzen"</span>
+                        <p class="mt-1 text-sm text-stone-600"><i>Ort:</i> <a href="https://setasdesevilla.com/" target="_blank" class="font-semibold underline hover:text-amber-800">Las Setas (Metropol Parasol)</a>.</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Aktivität:</i> Fahrt mit dem Aufzug auf die gigantische Holzkonstruktion. Spektakulärer Blick über die beleuchtete Stadt.</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">20:30 Uhr – Dinner: Tradition oder Moderne</span>
+                        <p class="mt-2 text-sm text-stone-600"><i>Option A (Historisch):</i> <a href="https://www.elrinconcillo.es/" target="_blank" class="font-semibold underline hover:text-amber-800">El Rinconcillo</a> (Calle Gerona, 40). Älteste Bar Sevillas (1670).</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Option B (Gourmet):</i> <a href="https://www.espacioeslava.com/" target="_blank" class="font-semibold underline hover:text-amber-800">Eslava</a> (Calle Eslava, 3) oder <a href="https://laazoteasevilla.com/" target="_blank" class="font-semibold underline hover:text-amber-800">La Azotea</a>. <i>Must-Eat im Eslava:</i> "Huevo sobre Bizcocho de Boletus".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel Sonntag -->
+        <div id="panel-sonntag" class="tab-panel">
+            <h2 class="text-2xl font-bold mb-4 text-stone-900">📅 Sonntag, 14. Dezember: Süßer Abschied</h2>
+            <p class="text-sm text-stone-600 mb-6">Ein entspannter Morgen für einen letzten Spaziergang am Fluss, bevor es zurück zum Flughafen geht.</p>
+            <div class="relative pl-6 space-y-6 border-l-2 border-amber-300">
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">09:00 Uhr – Morgenstimmung am Fluss</span>
+                        <p class="mt-1 text-sm text-stone-600">Ein letzter kurzer Spaziergang zum <strong>Torre del Oro</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">10:00 Uhr – Transfer zum Flughafen</span>
+                        <p class="mt-1 text-sm text-stone-600">Gepäck im Hotel holen und Taxi nehmen.</p>
+                        <p class="mt-1 text-sm text-stone-600"><i>Zeitplan:</i> Ihr müsst ca. 10:40 Uhr am Flughafen sein (Abflug 12:10 Uhr).</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -left-8 top-1.5 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow"></div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                        <span class="font-bold text-amber-700 text-sm">12:10 Uhr – Rückflug</span>
+                        <p class="mt-1 text-sm text-stone-600">¡Buen viaje!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Tapas -->
+        <div id="panel-tapas" class="tab-panel">
+            <h2 class="text-2xl font-bold mb-4 text-stone-900">🍷 Kulinarischer Leitfaden</h2>
+            <p class="text-sm text-stone-600 mb-6">Dieser Abschnitt ist euer Spickzettel für die authentische sevillanische Küche. Hier findet ihr die Spezialitäten, die ihr probieren solltet, und weitere Top-Empfehlungen.</p>
+
+            <h3 class="text-lg font-semibold mb-3 text-stone-800">Was ihr unbedingt probieren müsst</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800">Jamón Ibérico de Bellota</h4>
+                    <p class="text-sm text-stone-600">Der beste Schinken der Welt.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800">Salmorejo</h4>
+                    <p class="text-sm text-stone-600">Kalte Tomatencreme (dickflüssiger als Gazpacho).</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800">Espinacas con Garbanzos</h4>
+                    <p class="text-sm text-stone-600">Spinat mit Kichererbsen (maurisches Erbe).</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800">Carrillada</h4>
+                    <p class="text-sm text-stone-600">Butterzarte geschmorte Schweinebäckchen.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800">Vino de Naranja</h4>
+                    <p class="text-sm text-stone-600">Süßlicher Orangenwein (typisch Sevilla).</p>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-3 text-stone-800">Alternative Top-Restaurants</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800"><a href="https://casaricardosevilla.com/" target="_blank" class="underline hover:text-amber-900">Casa Ricardo</a></h4>
+                    <p class="text-sm text-stone-600">(San Lorenzo): Beste Croquetas.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800"><a href="https://ovejasnegrascompany.com/en/mamarracha/" target="_blank" class="underline hover:text-amber-900">Mamarracha</a></h4>
+                    <p class="text-sm text-stone-600">(Zentrum): Modern, offener Grill.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                    <h4 class="font-bold text-amber-800"><a href="https://ovejasnegrascompany.com/ovejas-negras/" target="_blank" class="underline hover:text-amber-900">Ovejas Negras</a></h4>
+                    <p class="text-sm text-stone-600">(Zentrum): Hip, Fusion Tapas.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Tipps -->
+        <div id="panel-tipps" class="tab-panel">
+            <h2 class="text-2xl font-bold mb-4 text-stone-900">💡 Wichtige Hinweise (Do's & Don'ts)</h2>
+            <p class="text-sm text-stone-600 mb-6">Ein paar kulturelle Tipps, damit ihr euch wie Einheimische fühlt und die typischen Touristenfallen vermeidet.</p>
+            
+            <h3 class="text-lg font-semibold mb-3 text-emerald-800">DO's (Was ihr tun solltet)</h3>
+            <div class="space-y-4 mb-6">
+                <div class="bg-emerald-50 p-4 rounded-lg shadow-sm border border-emerald-200 flex items-start gap-3">
+                    <span class="text-emerald-600 font-bold text-xl mt-1">✓</span>
+                    <div>
+                        <h4 class="font-bold text-emerald-900">Tickets vorbuchen</h4>
+                        <p class="text-sm text-emerald-800">Habt ihr erledigt! ✅ Für Alcázar und Kathedrale ist das essentiell.</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-lg shadow-sm border border-emerald-200 flex items-start gap-3">
+                    <span class="text-emerald-600 font-bold text-xl mt-1">✓</span>
+                    <div>
+                        <h4 class="font-bold text-emerald-900">Spät essen</h4>
+                        <p class="text-sm text-emerald-800">Mittagessen ist von 14-16 Uhr. Abendessen beginnt für Einheimische selten vor 21 Uhr.</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-lg shadow-sm border border-emerald-200 flex items-start gap-3">
+                    <span class="text-emerald-600 font-bold text-xl mt-1">✓</span>
+                    <div>
+                        <h4 class="font-bold text-emerald-900">Im Stehen essen</h4>
+                        <p class="text-sm text-emerald-800">An der Theke ("barra") ist es oft günstiger und geselliger.</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-lg shadow-sm border border-emerald-200 flex items-start gap-3">
+                    <span class="text-emerald-600 font-bold text-xl mt-1">✓</span>
+                    <div>
+                        <h4 class="font-bold text-emerald-900">Nach der Rechnung fragen</h4>
+                        <p class="text-sm text-emerald-800">"La Cuenta, por favor" – sie kommt nicht automatisch (das gilt als unhöflich).</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-3 text-red-800">DON'Ts (Was ihr vermeiden solltet)</h3>
+            <div class="space-y-4">
+                <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-200 flex items-start gap-3">
+                    <span class="text-red-600 font-bold text-xl mt-1">✗</span>
+                    <div>
+                        <h4 class="font-bold text-red-900">Hektik</h4>
+                        <p class="text-sm text-red-800">"No pasa nada" (Alles gut) – entspannt euch, auch wenn der Kellner mal dauert.</p>
+                    </div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-200 flex items-start gap-3">
+                    <span class="text-red-600 font-bold text-xl mt-1">✗</span>
+                    <div>
+                        <h4 class="font-bold text-red-900">Paella am Abend</h4>
+                        <p class="text-sm text-red-800">Das ist ein schweres Mittagsgericht. Abends isst man Tapas.</p>
+                    </div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-200 flex items-start gap-3">
+                    <span class="text-red-600 font-bold text-xl mt-1">✗</span>
+                    <div>
+                        <h4 class="font-bold text-red-900">Orangen von den Bäumen essen</h4>
+                        <p class="text-sm text-red-800">Die Früchte an den Straßenbäumen sind ungenießbare Bitterorangen!</p>
+                    </div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-200 flex items-start gap-3">
+                    <span class="text-red-600 font-bold text-xl mt-1">✗</span>
+                    <div>
+                        <h4 class="font-bold text-red-900">Flamenco-Fallen</h4>
+                        <p class="text-sm text-red-800">Meidet "Gratis-Shows" auf der Straße. Gute Adressen (Fokus auf Kunst, ohne Essen) sind: <a href="https://lacasadelflamencosevilla.com/" target="_blank" class="font-semibold underline hover:text-red-900">La Casa del Flamenco</a> oder <a href="https://museoflamenco.com/" target="_blank" class="font-semibold underline hover:text-red-900">Museo del Baile Flamenco</a>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tabs = document.querySelectorAll('.nav-tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            const dayTabs = document.querySelectorAll('.day-tab');
-            const dayContents = document.querySelectorAll('.day-content');
-            const filterBtns = document.querySelectorAll('.filter-btn');
-            const foodGrid = document.getElementById('food-grid');
-            const modalBackdrop = document.getElementById('modal-backdrop');
-            const modalContent = document.getElementById('modal-content');
-            const modalClose = document.getElementById('modal-close');
-
-            const tapasBars = [
-                { id: 1, name: 'Bodega Santa Cruz (Las Columnas)', specialty: 'Pringá Montadito, Tinto de Verano', vibe: 'Laut, chaotisch, stehend an der Bar, absolut authentisch.', address: 'Calle Rodrigo Caro, 1', tags: ['traditionell', 'mittag'] },
-                { id: 2, name: 'Casa Morales', specialty: 'Espinacas con Garbanzos, Käse, Montaditos', vibe: 'Institution seit 1850, riesige Weinfässer im Hinterraum.', address: 'Calle García de Vinuesa, 11', tags: ['traditionell', 'abend'] },
-                { id: 3, name: 'Bodeguita Romero', specialty: 'Bestes Pringá-Sandwich, Carrillada (Schweinebäckchen)', vibe: 'Klassisch, beliebt, im Arenal-Viertel.', address: 'Calle Harinas, 10', tags: ['traditionell', 'abend'] },
-                { id: 4, name: 'Estraperlo', specialty: 'Ökologische, moderne Gerichte', vibe: 'Beliebt bei Einheimischen im Viertel El Porvenir.', address: 'Calle del Porvenir', tags: ['modern', 'mittag'] },
-                { id: 5, name: 'La Bartola', specialty: 'Exzellente Zucchini-Blüten, vegetarische Optionen, klassische Tapas', vibe: 'Gemütlich, auf dem Rückweg vom Zentrum.', address: 'Calle San Jose', tags: ['modern', 'mittag'] },
-                { id: 6, name: 'El Rinconcillo', specialty: 'Jamón Ibérico (für einen Drink)', vibe: 'Älteste Bar Sevillas (1670). Sehr voll, historisches Erlebnis.', address: 'Calle Gerona, 40', tags: ['traditionell', 'abend'] },
-                { id: 7, name: 'Eslava', specialty: 'Huevo sobre Bizcocho de Boletus (Ei auf Steinpilzkuchen)', vibe: 'Preisgekrönte Gourmet-Tapas. Früh da sein!', address: 'Calle Eslava, 3', tags: ['modern', 'abend'] },
-                { id: 8, name: 'La Azotea', specialty: 'Gourmet-Tapas', vibe: 'Alternative zu Eslava, gehoben und modern.', address: 'Unbekannt (im Plan erwähnt)', tags: ['modern', 'abend'] },
-                { id: 9, name: 'Bar El Comercio', specialty: 'Churros con Chocolate (dick, frisch)', vibe: 'Traditionelles Frühstückslokal.', address: 'Calle Lineros, 9', tags: ['traditionell'] },
-                { id: 10, name: 'Casa Ricardo', specialty: 'Die besten Croquetas der Stadt', vibe: 'Sehr religiöses Dekor, sehr lokal (Alternative).', address: 'Barrio San Lorenzo', tags: ['traditionell', 'alternativ'] },
-                { id: 11, name: 'Mamarracha', specialty: 'Modernes Tapas-Konzept, offener Grill', vibe: 'Tolles Design, hip (Alternative).', address: 'Nähe Kathedrale', tags: ['modern', 'alternativ'] },
-                { id: 12, name: 'Ovejas Negras', specialty: 'Fusion Tapas', vibe: 'Jung, hip, sehr lecker (Alternative). Früh da sein!', address: 'Nähe Kathedrale', tags: ['modern', 'alternativ'] }
-            ];
-
-            const renderFoodGrid = (filter) => {
-                foodGrid.innerHTML = '';
-                const filteredBars = filter === 'all' ? tapasBars : tapasBars.filter(bar => bar.tags.includes(filter));
-                
-                filteredBars.forEach(bar => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-white border border-stone-200 p-4 rounded-lg shadow-md transition duration-300 hover:shadow-xl hover:border-orange-300 cursor-pointer food-card';
-                    card.dataset.id = bar.id;
-                    card.innerHTML = `
-                        <h4 class="font-bold text-lg text-orange-800">${bar.name}</h4>
-                        <p class="text-stone-600 text-sm mt-1">Spezialität: ${bar.specialty.split(',')[0]}</p>
-                        <div class="flex flex-wrap gap-1.5 mt-3">
-                            ${bar.tags.map(tag => `<span class="bg-orange-100 text-orange-700 text-xs font-medium px-2.5 py-0.5 rounded-full">${tag}</span>`).join('')}
-                        </div>
-                    `;
-                    foodGrid.appendChild(card);
-                });
-            };
-
-            const openModal = (id) => {
-                const bar = tapasBars.find(b => b.id == id);
-                document.getElementById('modal-title').textContent = bar.name;
-                document.getElementById('modal-specialty').textContent = bar.specialty;
-                document.getElementById('modal-vibe').textContent = bar.vibe;
-                document.getElementById('modal-address').textContent = bar.address;
-                modalBackdrop.classList.remove('hidden');
-                modalBackdrop.classList.add('flex');
-            };
-
-            const closeModal = () => {
-                modalBackdrop.classList.add('hidden');
-                modalBackdrop.classList.remove('flex');
-            };
-
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => {
-                        t.classList.remove('border-orange-600', 'text-orange-700');
-                        t.classList.add('border-transparent', 'text-stone-500', 'hover:border-orange-300', 'hover:text-stone-800');
-                        t.setAttribute('aria-selected', 'false');
-                    });
-                    tab.classList.add('border-orange-600', 'text-orange-700');
-                    tab.classList.remove('border-transparent', 'text-stone-500', 'hover:border-orange-300', 'hover:text-stone-800');
-                    tab.setAttribute('aria-selected', 'true');
-
-                    tabContents.forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    document.getElementById(tab.dataset.tab).classList.remove('hidden');
-                });
-            });
-
-            dayTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    dayTabs.forEach(t => {
-                        t.classList.remove('text-orange-700', 'border-orange-600');
-                        t.classList.add('text-stone-500', 'border-transparent', 'hover:border-orange-300', 'hover:text-stone-800');
-                        t.setAttribute('aria-selected', 'false');
-                    });
-                    tab.classList.add('text-orange-700', 'border-orange-600');
-                    tab.classList.remove('text-stone-500', 'border-transparent', 'hover:border-orange-300', 'hover:text-stone-800');
-                    tab.setAttribute('aria-selected', 'true');
-
-                    dayContents.forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    document.getElementById(tab.dataset.day).classList.remove('hidden');
-                });
-            });
+        function showTab(panelId, tabId) {
             
-            filterBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    filterBtns.forEach(b => {
-                        b.classList.remove('bg-orange-600', 'text-white');
-                        b.classList.add('bg-stone-200', 'text-stone-700', 'hover:bg-stone-300');
-                    });
-                    btn.classList.add('bg-orange-600', 'text-white');
-                    btn.classList.remove('bg-stone-200', 'text-stone-700', 'hover:bg-stone-300');
-                    
-                    renderFoodGrid(btn.dataset.filter);
-                });
+            const panels = document.querySelectorAll('.tab-panel');
+            panels.forEach(panel => {
+                panel.classList.remove('active');
             });
 
-            foodGrid.addEventListener('click', (e) => {
-                const card = e.target.closest('.food-card');
-                if (card) {
-                    openModal(card.dataset.id);
-                }
+            
+            const tabs = document.querySelectorAll('.tab-button');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
             });
 
-            modalClose.addEventListener('click', closeModal);
-            modalBackdrop.addEventListener('click', (e) => {
-                if (e.target === modalBackdrop) {
-                    closeModal();
-                }
-            });
+            
+            const activePanel = document.getElementById(panelId);
+            if (activePanel) {
+                activePanel.classList.add('active');
+            }
+            const activeTab = document.getElementById(tabId);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+        }
 
-            const ctx = document.getElementById('activityChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Kulinarik 🍽️', 'Kultur & Sights 🏛️', 'Logistik & Pausen 🛌'],
-                    datasets: [{
-                        label: 'Aktivitäten',
-                        data: [5, 4, 4], 
-                        backgroundColor: [
-                            '#EA580C', 
-                            '#F97316', 
-                            '#FB923C'  
-                        ],
-                        borderColor: '#FFF7ED',
-                        borderWidth: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    family: 'Inter',
-                                    size: 14
-                                }
-                            }
-                        },
-                        tooltip: {
-                            bodyFont: {
-                                family: 'Inter'
-                            },
-                            titleFont: {
-                                family: 'Inter'
-                            }
-                        }
-                    }
-                }
-            });
+        window.onload = function() {
+            
+            const today = new Date();
+            
+            
+            
+            
+            
+            
+            
+            
+            const day = 12; 
+            const month = 12; 
 
-            renderFoodGrid('all');
-        });
+            let defaultPanel = 'panel-freitag';
+            let defaultTab = 'tab-freitag';
+            let defaultTabLabel = 'Fr, 12.12. (Heute)';
+
+            if (month === 12 && day === 13) {
+                defaultPanel = 'panel-samstag';
+                defaultTab = 'tab-samstag';
+                defaultTabLabel = 'Sa, 13.12. (Heute)';
+                
+                const freitagTab = document.getElementById('tab-freitag');
+                if(freitagTab) freitagTab.textContent = 'Fr, 12.12.';
+            } else if (month === 12 && day === 14) {
+                defaultPanel = 'panel-sonntag';
+                defaultTab = 'tab-sonntag';
+                defaultTabLabel = 'So, 14.12. (Heute)';
+                
+                const freitagTab = document.getElementById('tab-freitag');
+                if(freitagTab) freitagTab.textContent = 'Fr, 12.12.';
+                const samstagTab = document.getElementById('tab-samstag');
+                if(samstagTab) samstagTab.textContent = 'Sa, 13.12.';
+            } else {
+                
+                
+                
+                
+                defaultPanel = 'panel-freitag';
+                defaultTab = 'tab-freitag';
+                defaultTabLabel = 'Fr, 12.12. (Heute)';
+                
+                const samstagTab = document.getElementById('tab-samstag');
+                if(samstagTab) samstagTab.textContent = 'Sa, 13.12.';
+                const sonntagTab = document.getElementById('tab-sonntag');
+                if(sonntagTab) sonntagTab.textContent = 'So, 14.12.';
+            }
+
+            
+            const activeTabButton = document.getElementById(defaultTab);
+            if(activeTabButton) activeTabButton.textContent = defaultTabLabel;
+
+            
+            showTab(defaultPanel, defaultTab);
+        };
     </script>
+
 </body>
 </html>
